@@ -1,39 +1,31 @@
 import streamlit as st
-import qrcode
-from PIL import Image
-import io
+import requests
 
-def generate_qr_code(url):
-    qr = qrcode.QRCode(
-        version=1,
-        error_correction=qrcode.constants.ERROR_CORRECT_L,
-        box_size=10,
-        border=4,
-    )
-    qr.add_data(url)
-    qr.make(fit=True)
+# Function to get weather data
+def get_weather_data(city_name):
+    api_key = "b5fb90812d2e71ecfedeee7880d05e40"
+    url = f"http://api.openweathermap.org/data/2.5/weather?q={city_name}&appid={api_key}&units=metric"
+    response = requests.get(url)
+    if response.status_code == 200:
+        data = response.json()
+        weather_description = data['weather'][0]['description']
+        temperature = data['main']['temp']
+        humidity = data['main']['humidity']
+        wind_speed = data['wind']['speed']
+        return weather_description, temperature, humidity, wind_speed
+    else:
+        return None
 
-    qr_img = qr.make_image(fill_color="black", back_color="white")
-    return qr_img
+# Streamlit app
+st.title("City Data Viewer")
 
-def main():
-    st.title("Webpage QR Code Generator")
-    st.write("Enter the webpage link below to generate a QR code.")
-
-    url = st.text_input("Enter webpage link:")
-    if st.button("Generate QR Code"):
-        if url:
-            qr_img = generate_qr_code(url)
-
-            # Convert PIL image to bytes
-            img_byte_array = io.BytesIO()
-            qr_img.save(img_byte_array, format='PNG')
-            img_byte_array = img_byte_array.getvalue()
-
-            # Display the QR code image
-            st.image(img_byte_array, caption='Generated QR Code', use_column_width=True)
-        else:
-            st.warning("Please enter a webpage link.")
-
-if __name__ == "__main__":
-    main()
+city_name = st.text_input("Enter the city name:")
+if city_name:
+    weather_data = get_weather_data(city_name)
+    if weather_data:
+        st.write(f"Weather in {city_name}: {weather_data[0]}")
+        st.write(f"Temperature: {weather_data[1]}°C")
+        st.write(f"Humidity: {weather_data[2]}%")
+        st.write(f"Wind Speed: {weather_data[3]} m/s")
+    else:
+        st.write("City not found. Please enter a valid city name.")
